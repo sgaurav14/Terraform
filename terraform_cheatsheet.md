@@ -1,13 +1,22 @@
-# Terraform Cheat Sheet
+# Terraform Cheat Sheet (Beginner Friendly)
 
-A quick reference for commonly used Terraform commands, concepts, and
-configurations.
+This cheat sheet explains the most common Terraform concepts and
+commands in a **simple way for beginners**.\
+Terraform is an **Infrastructure as Code (IaC)** tool used to create and
+manage infrastructure such as EC2, VPC, databases, Kubernetes clusters,
+etc.
 
 ------------------------------------------------------------------------
 
-## 1. Provider Configuration
+# 1. Provider Configuration
 
-Define required providers in `main.tf` or `providers.tf`.
+Terraform works with different platforms like **AWS, Azure, GCP,
+Kubernetes**.\
+These platforms are called **providers**.
+
+You must define which provider Terraform should use.
+
+Example:
 
 ``` hcl
 terraform {
@@ -20,7 +29,19 @@ terraform {
 }
 ```
 
-Configure the provider:
+Explanation:
+
+-   `required_providers` → tells Terraform which provider to download
+-   `source` → where the provider plugin is located
+-   `version` → which version should be used
+
+------------------------------------------------------------------------
+
+# 2. Configure the Provider
+
+After declaring the provider, we must configure it.
+
+Example:
 
 ``` hcl
 provider "aws" {
@@ -28,110 +49,164 @@ provider "aws" {
 }
 ```
 
+Explanation:
+
+-   `provider "aws"` → tells Terraform we are using AWS
+-   `region` → AWS region where resources will be created
+
 ------------------------------------------------------------------------
 
-## 2. Configure AWS Credentials
+# 3. Configure AWS Credentials
 
-**Using AWS CLI**
+Terraform needs credentials to access AWS.
+
+### Option 1 (Recommended)
+
+Use AWS CLI:
 
 ``` bash
 aws configure
 ```
 
-**Or directly in provider configuration (not recommended for
-production):**
+It stores credentials in:
+
+    ~/.aws/credentials
+
+### Option 2
+
+Define credentials inside Terraform (not recommended):
 
 ``` hcl
 provider "aws" {
   region     = "us-east-1"
-  access_key = "ACCESS_KEY"
-  secret_key = "SECRET_KEY"
+  access_key = "XXXX"
+  secret_key = "XXXX"
 }
 ```
 
 ------------------------------------------------------------------------
 
-## 3. Terraform Workflow Commands
+# 4. Terraform Workflow
 
-Initialize Terraform project
+Terraform generally follows this workflow.
+
+### Initialize Terraform
 
 ``` bash
 terraform init
 ```
 
-Validate Terraform configuration
+What it does:
+
+-   Downloads provider plugins
+-   Creates `.terraform` directory
+-   Initializes working directory
+
+------------------------------------------------------------------------
+
+### Validate Configuration
 
 ``` bash
 terraform validate
 ```
 
-Preview infrastructure changes
+Checks if the Terraform configuration has **syntax errors**.
+
+------------------------------------------------------------------------
+
+### Plan Infrastructure
 
 ``` bash
 terraform plan
 ```
 
-Apply configuration
+Shows:
+
+-   What Terraform **will create**
+-   What Terraform **will modify**
+-   What Terraform **will destroy**
+
+This command **does not create resources**.
+
+------------------------------------------------------------------------
+
+### Apply Configuration
 
 ``` bash
 terraform apply
 ```
 
-Apply without approval
+Creates or modifies infrastructure.
+
+Terraform will ask for confirmation before applying changes.
+
+------------------------------------------------------------------------
+
+### Auto Approve Apply
 
 ``` bash
 terraform apply -auto-approve
 ```
 
-Destroy infrastructure
+Skips confirmation prompt.
+
+Useful in **CI/CD pipelines**.
+
+------------------------------------------------------------------------
+
+### Destroy Infrastructure
 
 ``` bash
 terraform destroy
 ```
 
-Destroy without approval
+Deletes all infrastructure defined in Terraform.
 
-``` bash
-terraform destroy -auto-approve
-```
+------------------------------------------------------------------------
 
-Destroy specific resource
+### Destroy Specific Resource
 
 ``` bash
 terraform destroy -target aws_instance.myec2
 ```
 
+Deletes only a specific resource.
+
 ------------------------------------------------------------------------
 
-## 4. Terraform State
+# 5. Terraform State
 
-Terraform stores infrastructure state in:
+Terraform stores the infrastructure state in a file:
 
     terraform.tfstate
 
-------------------------------------------------------------------------
+This file contains:
 
-## 5. Refresh State
+-   resource IDs
+-   infrastructure configuration
+-   metadata
 
-Refresh infrastructure state manually:
-
-``` bash
-terraform refresh
-```
-
-Note: This is already executed internally during `plan` and `apply`.
+Terraform uses this file to understand **what already exists**.
 
 ------------------------------------------------------------------------
 
-## 6. Upgrade Providers
+# 6. Upgrade Providers
+
+If you change provider versions, run:
 
 ``` bash
 terraform init -upgrade
 ```
 
+This downloads the newer provider version.
+
 ------------------------------------------------------------------------
 
-## 7. Resource Attribute Reference
+# 7. Referencing Resource Attributes
+
+Sometimes one resource needs information from another resource.
+
+Syntax:
 
     resource_type.resource_name.attribute
 
@@ -139,30 +214,42 @@ Example:
 
     aws_eip.lb.public_ip
 
-------------------------------------------------------------------------
+Explanation:
 
-## 8. Recommended Terraform Folder Structure
-
-    provider.tf
-    main.tf
-    variables.tf
-    outputs.tf
-    terraform.tfvars
-
-Use variable files:
-
-``` bash
-terraform plan -var-file="dev.tfvars"
-terraform plan -var-file="prod.tfvars"
-```
-
-`terraform.tfvars` is automatically loaded.
+-   `aws_eip` → resource type
+-   `lb` → resource name
+-   `public_ip` → attribute
 
 ------------------------------------------------------------------------
 
-## 9. Variables
+# 8. Terraform Folder Structure
 
-Declare variable:
+A common Terraform project structure looks like:
+
+    terraform-project/
+    │
+    ├── provider.tf
+    ├── main.tf
+    ├── variables.tf
+    ├── outputs.tf
+    ├── terraform.tfvars
+
+Explanation:
+
+-   `provider.tf` → provider configuration
+-   `main.tf` → main infrastructure code
+-   `variables.tf` → variable definitions
+-   `outputs.tf` → outputs after deployment
+-   `terraform.tfvars` → variable values
+
+------------------------------------------------------------------------
+
+# 9. Variables
+
+Variables allow us to make Terraform configurations **reusable and
+flexible**.
+
+Example:
 
 ``` hcl
 variable "instance_type" {
@@ -170,20 +257,44 @@ variable "instance_type" {
 }
 ```
 
-Terraform prompts for the value if none is provided.
+If no value is provided, Terraform will ask the user during execution.
 
 ------------------------------------------------------------------------
 
-## 10. Ways to Define Variable Values
+# 10. Ways to Provide Variable Values
 
-1.  Variable default values
-2.  `.tfvars` files
-3.  Environment variables
+Terraform supports multiple ways to provide variables.
 
-```{=html}
-<!-- -->
+### 1. Default value
+
+``` hcl
+variable "instance_type" {
+  default = "t2.micro"
+}
 ```
-    TF_VAR_variable_name
+
+------------------------------------------------------------------------
+
+### 2. tfvars file
+
+Example:
+
+    dev.tfvars
+    prod.tfvars
+
+Run:
+
+``` bash
+terraform plan -var-file="dev.tfvars"
+```
+
+------------------------------------------------------------------------
+
+### 3. Environment variables
+
+Terraform supports environment variables with prefix:
+
+    TF_VAR_
 
 Example:
 
@@ -191,7 +302,9 @@ Example:
 export TF_VAR_instance_type=t2.micro
 ```
 
-4.  Command line
+------------------------------------------------------------------------
+
+### 4. Command line
 
 ``` bash
 terraform plan -var="instance_type=t2.micro"
@@ -199,7 +312,10 @@ terraform plan -var="instance_type=t2.micro"
 
 ------------------------------------------------------------------------
 
-## 11. Variable Precedence
+# 11. Variable Precedence
+
+If the same variable exists in multiple places, Terraform follows this
+priority.
 
 Highest → Lowest
 
@@ -208,11 +324,13 @@ Highest → Lowest
 3.  `terraform.tfvars.json`
 4.  `terraform.tfvars`
 5.  Environment variables
-6.  Variable defaults
+6.  Default values
 
 ------------------------------------------------------------------------
 
-## 12. Variable Data Types
+# 12. Variable Data Types
+
+Terraform supports different types.
 
 Example:
 
@@ -233,48 +351,46 @@ Common types:
 
 ------------------------------------------------------------------------
 
-## 13. List Data Type
+# 13. List Data Type
+
+A **list** stores multiple values.
+
+Example:
 
 ``` hcl
-["a", "b", "c"]
+["web", "db", "cache"]
 ```
 
 Used for:
 
--   security group IDs
--   multiple tags
--   multiple resources
+-   multiple security groups
+-   tags
+-   ports
 
 ------------------------------------------------------------------------
 
-## 14. Map Data Type
+# 14. Map Data Type
+
+A **map** stores key-value pairs.
+
+Example:
 
 ``` hcl
 {
   Team = "DevOps"
-  location = "us-east-1"
+  Project = "Payment"
 }
 ```
 
-Commonly used for tagging.
+Mostly used for **tags**.
 
 ------------------------------------------------------------------------
 
-## 15. Count
+# 15. Count
 
-Create multiple resources.
+`count` allows creating multiple resources.
 
-``` hcl
-resource "aws_instance" "my_ec2" {
-  ami           = "ami-123"
-  instance_type = "t2.micro"
-  count         = 3
-}
-```
-
-------------------------------------------------------------------------
-
-## 16. count.index
+Example:
 
 ``` hcl
 resource "aws_instance" "my_ec2" {
@@ -283,43 +399,52 @@ resource "aws_instance" "my_ec2" {
   instance_type = "t2.micro"
   count         = 3
 
-  tags = {
-    Name = "my-app-server-${count.index}"
-  }
 }
 ```
 
+This creates **3 EC2 instances**.
+
 ------------------------------------------------------------------------
 
-## 17. Count with Variables
+# 16. count.index
+
+`count.index` helps generate unique values.
+
+Example:
 
 ``` hcl
-variable "users" {
-  type    = list(string)
-  default = ["sid", "gaurav", "andy"]
-}
-
-resource "aws_iam_user" "test" {
-  name  = var.users[count.index]
-  count = 3
+tags = {
+  Name = "app-server-${count.index}"
 }
 ```
 
+Result:
+
+    app-server-0
+    app-server-1
+    app-server-2
+
 ------------------------------------------------------------------------
 
-## 18. Conditional Expression
+# 17. Conditional Expressions
+
+Terraform supports conditional logic.
+
+Example:
 
 ``` hcl
 instance_type = var.env == "dev" ? "t2.micro" : "m5.large"
 ```
 
-Syntax:
+Explanation:
 
     condition ? true_value : false_value
 
 ------------------------------------------------------------------------
 
-## 19. Terraform Functions
+# 18. Terraform Functions
+
+Terraform has built-in functions.
 
 Open console:
 
@@ -332,49 +457,56 @@ Examples:
     max(10,20,30)
     file("userdata.sh")
 
-------------------------------------------------------------------------
-
-## 20. Local Values
-
-``` hcl
-locals {
-  default_tags = {
-    app = "payment-app"
-  }
-}
-
-resource "aws_security_group" "sg" {
-  name = "app-firewall"
-  tags = local.default_tags
-}
-```
+`file()` reads a file and returns its content.
 
 ------------------------------------------------------------------------
 
-## 21. Data Sources
+# 19. Local Values
 
-Fetch data from existing infrastructure.
+Locals store reusable values.
 
 Example:
 
 ``` hcl
-data "local_file" "userdata" {
-  filename = "${path.module}/userdata.sh"
+locals {
+  app_name = "payment-service"
 }
+```
 
-resource "aws_instance" "my_ec2" {
-  ami           = "ami-123"
-  instance_type = "t2.micro"
+Use it:
 
-  user_data = data.local_file.userdata.content
+``` hcl
+tags = {
+  Name = local.app_name
 }
 ```
 
 ------------------------------------------------------------------------
 
-## 22. Terraform Logging
+# 20. Data Sources
 
-Enable logs:
+Data sources fetch information from **existing infrastructure**.
+
+Example:
+
+``` hcl
+data "aws_instance" "example" {
+
+  filter {
+    name = "tag:Name"
+    values = ["Production"]
+  }
+
+}
+```
+
+Terraform can now use that instance's attributes.
+
+------------------------------------------------------------------------
+
+# 21. Terraform Logging
+
+Enable debugging logs:
 
 ``` bash
 export TF_LOG=DEBUG
@@ -396,34 +528,33 @@ export TF_LOG_PATH=terraform.log
 
 ------------------------------------------------------------------------
 
-## 23. Dynamic Blocks
+# 22. Dynamic Blocks
+
+Dynamic blocks help create repeated nested blocks.
+
+Example:
 
 ``` hcl
-variable "aws_sg_ports" {
-  type    = list(number)
-  default = [8080,80,443]
-}
+dynamic "ingress" {
 
-resource "aws_security_group" "my_sg" {
+  for_each = var.aws_ports
 
-  dynamic "ingress" {
-    for_each = var.aws_sg_ports
-
-    content {
-      from_port   = ingress.value
-      to_port     = ingress.value
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
+  content {
+    from_port = ingress.value
+    to_port   = ingress.value
+    protocol  = "tcp"
   }
+
 }
 ```
 
+Useful when generating **multiple security group rules**.
+
 ------------------------------------------------------------------------
 
-## 24. Replace Resource
+# 23. Replace Resources
 
-Force recreation of resource.
+Force Terraform to recreate a resource.
 
 ``` bash
 terraform apply -replace="aws_instance.myec2"
@@ -431,55 +562,52 @@ terraform apply -replace="aws_instance.myec2"
 
 ------------------------------------------------------------------------
 
-## 25. Splat Expression
+# 24. Splat Expression
+
+Retrieve attributes from multiple resources.
+
+Example:
 
 ``` hcl
-resource "aws_iam_user" "lb" {
-  name  = "iamuser.${count.index}"
-  count = 3
-}
-
 output "arns" {
   value = aws_iam_user.lb[*].arn
 }
 ```
 
+Returns **list of ARNs**.
+
 ------------------------------------------------------------------------
 
-## 26. Terraform Graph
+# 25. Terraform Graph
 
-Generate dependency graph:
+Shows resource dependency graph.
 
 ``` bash
 terraform graph
 ```
 
-Generate SVG:
+Convert to image:
 
 ``` bash
 terraform graph | dot -Tsvg > graph.svg
 ```
 
-Requires Graphviz.
+Requires **Graphviz**.
 
 ------------------------------------------------------------------------
 
-## 27. Save Terraform Plan
+# 26. Save Terraform Plan
+
+Save plan output to file.
 
 ``` bash
 terraform plan -out=tfplan
 ```
 
-View saved plan:
+View plan:
 
 ``` bash
 terraform show tfplan
-```
-
-JSON format:
-
-``` bash
-terraform show -json tfplan | jq
 ```
 
 Apply saved plan:
@@ -490,21 +618,29 @@ terraform apply tfplan
 
 ------------------------------------------------------------------------
 
-## 28. Terraform Output
+# 27. Terraform Output
+
+Outputs display useful values after deployment.
+
+Example:
+
+``` hcl
+output "instance_ip" {
+  value = aws_instance.myec2.public_ip
+}
+```
+
+View output:
 
 ``` bash
 terraform output
 ```
 
-Example:
-
-``` bash
-terraform output iam_names
-```
-
 ------------------------------------------------------------------------
 
-## 29. Terraform Settings
+# 28. Terraform Version Requirement
+
+Define minimum Terraform version.
 
 ``` hcl
 terraform {
@@ -514,12 +650,10 @@ terraform {
 
 ------------------------------------------------------------------------
 
-## 30. Provider Requirement
+# 29. Provider Requirement
 
 ``` hcl
 terraform {
-
-  required_version = ">= 1.8"
 
   required_providers {
     aws = {
@@ -527,21 +661,28 @@ terraform {
       version = ">= 2.7.0"
     }
   }
+
 }
 ```
 
 ------------------------------------------------------------------------
 
-## 31. Resource Targeting
+# 30. Resource Targeting
 
-Plan specific resource:
+Apply changes only to specific resources.
+
+Plan:
 
 ``` bash
 terraform plan -target aws_instance.myec2
 ```
 
-Apply specific resource:
+Apply:
 
 ``` bash
 terraform apply -target aws_instance.myec2
 ```
+
+⚠️ Should be used carefully because it may break dependency chains.
+
+------------------------------------------------------------------------
